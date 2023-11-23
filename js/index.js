@@ -51,6 +51,7 @@ window.onload = function () {
             return -1; // 两个div相交，返回-1
         }
     }
+
     function dragMoveListener(event) {
         let target = event.target
         // keep the dragged position in the data-x/data-y attributes
@@ -63,8 +64,29 @@ window.onload = function () {
         target.setAttribute('data-x', x)
         target.setAttribute('data-y', y)
     }
+
+    function resizeMoveListener(event) {
+        let target = event.target
+        let x = (parseFloat(target.getAttribute('data-x')) || 0)
+        let y = (parseFloat(target.getAttribute('data-y')) || 0)
+
+        // update the element's style
+        target.style.width = event.rect.width + 'px'
+        target.style.height = event.rect.height + 'px'
+
+        // translate when resizing from top or left edges
+        x += event.deltaRect.left
+        y += event.deltaRect.top
+
+        target.style.transform = 'translate(' + x + 'px,' + y + 'px)'
+
+        target.setAttribute('data-x', x)
+        target.setAttribute('data-y', y)
+        // target.textContent = Math.round(event.rect.width) + '\u00D7' + Math.round(event.rect.height)
+    }
     // Set the component to be draggable
     interact('#comp').draggable({
+        origin: 'self',
         inertia: true,
         autoScroll: true,
         listeners: {}
@@ -105,9 +127,9 @@ window.onload = function () {
             event.target.classList.remove('drop-active')
             event.target.classList.remove('drop-target')
         }
-    }) 
+    })
     // Set the components on the canvas to be draggable and resizable
-    interact('.container > div').draggable({
+    interact('.container > .comp').draggable({
         modifiers: [
             // interact.modifiers.snap({
             //     targets: [
@@ -148,25 +170,7 @@ window.onload = function () {
         },
 
         listeners: {
-            move(event) {
-                let target = event.target
-                let x = (parseFloat(target.getAttribute('data-x')) || 0)
-                let y = (parseFloat(target.getAttribute('data-y')) || 0)
-
-                // update the element's style
-                target.style.width = event.rect.width + 'px'
-                target.style.height = event.rect.height + 'px'
-
-                // translate when resizing from top or left edges
-                x += event.deltaRect.left
-                y += event.deltaRect.top
-
-                target.style.transform = 'translate(' + x + 'px,' + y + 'px)'
-
-                target.setAttribute('data-x', x)
-                target.setAttribute('data-y', y)
-                // target.textContent = Math.round(event.rect.width) + '\u00D7' + Math.round(event.rect.height)
-            }
+            move: resizeMoveListener
         },
         modifiers: [
             // keep the edges inside the parent
@@ -180,34 +184,67 @@ window.onload = function () {
                     width: 100,
                     height: 50
                 }
-            })
+            }),
+            // interact.modifiers.snapSize({
+            //     targets: [
+            //         // { width: 100 },
+            //         interact.snappers.grid({
+            //             x: 20,
+            //             y: 20,
+            //             // range: 20,
+
+            //         }),
+            //     ],
+            // }),
         ],
 
         inertia: true
     })
     // 吸附和对齐
-    interact('.container > div').on('dragmove', function (event) {
+    interact('.container > .comp').on('dragmove', function (event) {
         console.log(event.type)
         let target = event.target;
         let x = (parseFloat(target.getAttribute('data-x')) || 0)
         let y = (parseFloat(target.getAttribute('data-y')) || 0)
         let targetRect = target.getBoundingClientRect();
         // Check the distance between the component and other components
-        let otherComps = document.querySelectorAll(`.container > div:not(#${target.id})`);
+        let otherComps = document.querySelectorAll(`.container > .comp:not(#${target.id})`);
         otherComps.forEach(function (comp) {
             let rect = comp.getBoundingClientRect();
             // 对齐效果
             if (Math.abs(targetRect.left - rect.left) < SNAP_DISTANCE) {
-                // x = (parseFloat(comp.getAttribute('data-x')) || 0)
-                console.log('1111')
                 target.style.left = rect.left + 'px'; // Align the left borders
                 x = 0
                 target.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
                 target.setAttribute('data-x', x);
                 target.setAttribute('data-y', y);
                 // return;
+                // 检查是否已经存在一个标尺，如果存在则移除它
+                let existingRuler = document.getElementById('ruler');
+                if (existingRuler) {
+                    ruler.style.left = rect.left + 'px';
+                } else {
+                    // 创建一个新的元素作为对齐标尺
+                    let ruler = document.createElement('div');
+                    ruler.id = 'ruler';
+                    ruler.style.position = 'absolute';
+                    ruler.style.left = rect.left + 'px';
+                    ruler.style.top = '0';
+                    ruler.style.bottom = '0';
+                    ruler.style.width = '1px';
+                    ruler.style.backgroundColor = 'red';
+                    document.body.appendChild(ruler);
+
+                    // 在一段时间后移除标尺
+                    setTimeout(function () {
+                        if (document.getElementById('ruler')) {
+                            document.body.removeChild(ruler);
+                        }
+                    }, 600);
+                }
+
             }
-            // 吸附效果
+            // 吸附效果 距离一定范围内才触发吸附效果
             if (diagonalDistance(target, comp, SNAP_DISTANCE)) {
                 // top to bottom
                 if (Math.abs(targetRect.top - rect.top - rect.height) < SNAP_DISTANCE) {
@@ -236,6 +273,4 @@ window.onload = function () {
             }
         });
     });
-
-
 }
