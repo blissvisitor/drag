@@ -33,7 +33,7 @@
 #### 研究基于interact.js实现(1小时)
 
 1. 库首页查看demo了解常见效果及每个代码大概实现逻辑
-2. Docus>Guide 了解库概念和API文档结构
+2. Docus>Guide>API 了解库概念和API文档结构
 3. 着重看demo中drag、drop、resize、snap
 4. 对齐实现原理与move拆分开、查找遍历其他子元素left与当前left距离的距离判定设置左对齐
 5. 吸附在对齐中实现，根据距离阈值判定是否进行吸附规则判定
